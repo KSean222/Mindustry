@@ -57,6 +57,7 @@ public abstract class BaseUnit extends Unit implements ShooterTrait{
     /** Overrides drone control */
     public static abstract class UnitOverrider implements UnitState {
         /** For subclasses to use */
+        protected static float maxItemTransferDistance = 70 * tilesize;
         private BaseUnit unit;
         protected UnitOverrider(BaseUnit unit){
             this.unit = unit;
@@ -64,6 +65,26 @@ public abstract class BaseUnit extends Unit implements ShooterTrait{
         public abstract void moveTo(float x, float y);
         public void shootAt(float x, float y){
             unit.getWeapon().update(unit, x, y);
+        }
+        public void loadFrom(float x, float y, Item item){
+            if(unit.dst(x, y) > maxItemTransferDistance) return;
+            Tile tile = world.tileWorld(x, y);
+            if(tile != null && tile.block().unloadable && tile.entity.items.has(item)){
+                while(tile.entity.items.has(item) && unit.acceptsItem(item)){
+                    tile.entity.items.remove(item, 1);
+                    Call.transferItemToUnit(item, tile.getX(), tile.getY(), unit);
+                }
+            }
+        }
+        public void unloadTo(float x, float y){
+            if(unit.dst(x, y) > maxItemTransferDistance) return;
+            if(unit.item.amount <= 0) return;
+            Tile tile = world.tileWorld(x, y);
+            if(tile == null || tile.entity == null) return;
+            int items = tile.block().acceptStack(unit.item.item, unit.item.amount, tile, unit);
+            if(items <= 0) return;
+            Call.transferItemTo(unit.item.item, items, unit.x, unit.y, tile);
+            unit.item.amount -= items;
         }
     }
 

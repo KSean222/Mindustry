@@ -7,6 +7,7 @@ import mindustry.content.UnitTypes;
 import mindustry.entities.Effects;
 import mindustry.entities.Units;
 import mindustry.entities.type.BaseUnit;
+import mindustry.type.Item;
 import mindustry.type.UnitType;
 import mindustry.world.blocks.logic.DroneCommanderBlock;
 import mindustry.world.blocks.logic.commanderblock.interpreter.Globals;
@@ -21,15 +22,18 @@ public class BlockGlobals {
     public Debug_ debug;
     public Block_ block;
     public Unit_ unit;
+    public Item_ item;
     public BlockGlobals(Interpreter interpreter, DroneCommanderBlock.DroneCommanderBlockEntity entity){
         debug = new Debug_(interpreter, entity);
         block = new Block_(interpreter, entity);
         unit = new Unit_(interpreter, entity);
+        item = new Item_(interpreter, entity);
     }
     public void modifyGlobals(InterpreterObject global){
         global.setProperty(InterpreterObject.create("Debug"), debug.global());
         global.setProperty(InterpreterObject.create("Block"), block.global());
         global.setProperty(InterpreterObject.create("Unit"), unit.global());
+        global.setProperty(InterpreterObject.create("Items"), item.global());
     }
     public abstract static class BlockGlobal extends Globals.Global {
         public DroneCommanderBlock.DroneCommanderBlockEntity entity;
@@ -83,6 +87,18 @@ public class BlockGlobals {
             return InterpreterObject.nullObject;
         }
     }
+    public static class Item_ extends BlockGlobal {
+        public Item_(Interpreter interpreter, DroneCommanderBlock.DroneCommanderBlockEntity entity) {
+            super(interpreter, entity);
+        }
+        public InterpreterObject global(){
+            InterpreterObject obj = InterpreterObject.create();
+            for(Item item: content.items()){
+                obj.setProperty(InterpreterObject.create(item.name), InterpreterObject.create((float) item.id));
+            }
+            return obj;
+        }
+    }
     public static class Unit_ extends BlockGlobal {
         public InterpreterObject unitType = InterpreterObject.create("type");
         public InterpreterObject unitX = InterpreterObject.create("x");
@@ -92,6 +108,8 @@ public class BlockGlobals {
         public InterpreterObject unitReset = InterpreterObject.create("reset");
         public InterpreterObject unitMoveTo = InterpreterObject.create("move_to");
         public InterpreterObject unitShootAt = InterpreterObject.create("shoot_at");
+        public InterpreterObject unitLoadFrom = InterpreterObject.create("load_from");
+        public InterpreterObject unitUnloadTo = InterpreterObject.create("unload_to");
         public Unit_(Interpreter interpreter, DroneCommanderBlock.DroneCommanderBlockEntity entity) {
             super(interpreter, entity);
         }
@@ -104,7 +122,7 @@ public class BlockGlobals {
         private InterpreterObject typeObject(){
             InterpreterObject obj = InterpreterObject.create();
             for(UnitType type: content.units()){
-                obj.setProperty(unitType, InterpreterObject.create((float) type.id));
+                obj.setProperty(InterpreterObject.create(type.name), InterpreterObject.create((float) type.id));
             }
             return obj;
         }
@@ -145,6 +163,24 @@ public class BlockGlobals {
             }));
             unitObj.setProperty(unitShootAt, wrapOverriderTwoFloatsFunc(unit, (x, y) -> {
                 unit.overrider.shootAt(x, y);
+                return null;
+            }));
+            unitObj.setProperty(unitLoadFrom, InterpreterObject.create(new NativeFunction(args -> {
+                if(unit.isValid() && args.length == 3 && unit.overrider != null){
+                    Object x = args[0].value();
+                    Object y = args[1].value();
+                    Object id = args[2].value();
+                    if(x instanceof Float && y instanceof Float && id instanceof Float) {
+                        Item item = content.item(Mathf.floor((float) id));
+                        if(item != null){
+                            unit.overrider.loadFrom((float) x, (float) y, item);
+                        }
+                    }
+                }
+                return InterpreterObject.nullObject;
+            })));
+            unitObj.setProperty(unitUnloadTo, wrapOverriderTwoFloatsFunc(unit, (x, y) -> {
+                unit.overrider.unloadTo(x, y);
                 return null;
             }));
             return unitObj;

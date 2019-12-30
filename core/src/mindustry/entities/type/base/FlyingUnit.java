@@ -120,21 +120,24 @@ public class FlyingUnit extends BaseUnit{
     }
     public static class UnitOverrider extends BaseUnit.UnitOverrider{
         FlyingUnit unit;
-        Vec2 target = new Vec2(Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
+        Vec2 target = null;
         public UnitOverrider(FlyingUnit unit){
             super(unit);
             this.unit = unit;
         }
         @Override
         public void update() {
-            Tmp.v1.set(target.x - unit.x, target.y - unit.y);
-            float dst = target.dst(unit.x, unit.y);
-            float spdMul = target.dst(unit.x, unit.y) > tilesize ? 1f : dst / tilesize / tilesize;
-            Tmp.v1.setLength(unit.type.speed * Time.delta() * spdMul);
-            unit.velocity.add(Tmp.v1);
+            if(target != null){
+                Tmp.v1.set(target.x - unit.x, target.y - unit.y);
+                float dst = target.dst(unit.x, unit.y);
+                float spdMul = target.dst(unit.x, unit.y) > tilesize ? 1f : dst / tilesize / tilesize;
+                Tmp.v1.setLength(unit.type.speed * Time.delta() * spdMul);
+                unit.velocity.add(Tmp.v1);
+            }
         }
         @Override
         public void moveTo(float x, float y) {
+            if(target == null) target = new Vec2();
             target.set(Mathf.floor(x) + 0.5f, Mathf.floor(y) + 0.5f);
         }
     }

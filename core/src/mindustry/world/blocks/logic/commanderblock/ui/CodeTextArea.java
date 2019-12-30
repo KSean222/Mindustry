@@ -1,5 +1,9 @@
-package mindustry.world.blocks.logic.commanderblock;
+package mindustry.world.blocks.logic.commanderblock.ui;
 
+import arc.graphics.Color;
+import arc.graphics.g2d.Draw;
+import arc.graphics.g2d.Fill;
+import arc.graphics.g2d.Lines;
 import arc.struct.Array;
 import arc.struct.IntArray;
 import arc.func.Func2;
@@ -41,6 +45,30 @@ public class CodeTextArea extends TextArea {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+    }
+    /*
+    @Override
+    protected void drawText(BitmapFont font, float x, float y) {
+        super.drawText(font, x, y);
+        /*
+        drawScrollbar(0, height);
+        Draw.color(Color.darkGray);
+        drawScrollbar(0, 20);
+
+        Draw.color(Color.red);
+        Fill.rect(getWidth(), getY(), 10, 10 + 80);
+        Draw.color(Color.green);
+        Fill.rect(getOriginX(), getOriginY(), 10, 10);
+        Draw.color(Color.blue);
+        Fill.rect(getWidth(), getHeight(), 10, 10);
+        Draw.color(Color.pink);
+        Lines.stroke(5);
+        Lines.line(getWidth(), getY(), getWidth(), getHeight());
+        Draw.color();
+    }
+    private void drawScrollbar(float startY, float endY){
+        final int scrollbarWidth = 10;
+        Fill.rect(x + width - scrollbarWidth, y + height / 2 - startY, scrollbarWidth, endY - startY + height / 2);
     }
     /*
     @Override
