@@ -3,15 +3,18 @@ package mindustry.world.blocks.logic.commanderblock;
 import arc.func.Func2;
 import arc.math.Mathf;
 import mindustry.content.Fx;
+import mindustry.content.UnitTypes;
 import mindustry.entities.Effects;
 import mindustry.entities.Units;
 import mindustry.entities.type.BaseUnit;
+import mindustry.type.UnitType;
 import mindustry.world.blocks.logic.DroneCommanderBlock;
 import mindustry.world.blocks.logic.commanderblock.interpreter.Globals;
 import mindustry.world.blocks.logic.commanderblock.interpreter.Interpreter;
 import mindustry.world.blocks.logic.commanderblock.interpreter.InterpreterObject;
 import mindustry.world.blocks.logic.commanderblock.nodes.NativeFunction;
 
+import static mindustry.Vars.content;
 import static mindustry.Vars.unitGroup;
 
 public class BlockGlobals {
@@ -81,6 +84,7 @@ public class BlockGlobals {
         }
     }
     public static class Unit_ extends BlockGlobal {
+        public InterpreterObject unitType = InterpreterObject.create("type");
         public InterpreterObject unitX = InterpreterObject.create("x");
         public InterpreterObject unitY = InterpreterObject.create("y");
         public InterpreterObject unitKill = InterpreterObject.create("kill");
@@ -93,10 +97,18 @@ public class BlockGlobals {
         }
         public InterpreterObject global(){
             InterpreterObject obj = InterpreterObject.create();
-            obj.setProperty(InterpreterObject.create("all"), InterpreterObject.create(new NativeFunction(this::all)));
+            obj.setProperty(InterpreterObject.create("units"), InterpreterObject.create(new NativeFunction(this::units)));
+            obj.setProperty(InterpreterObject.create("type"), typeObject());
             return obj;
         }
-        public InterpreterObject all(InterpreterObject[] args){
+        private InterpreterObject typeObject(){
+            InterpreterObject obj = InterpreterObject.create();
+            for(UnitType type: content.units()){
+                obj.setProperty(unitType, InterpreterObject.create((float) type.id));
+            }
+            return obj;
+        }
+        public InterpreterObject units(InterpreterObject[] args){
             InterpreterObject list = interpreter.globals.list.create(null);
             NativeFunction push = (NativeFunction) list.getProperty(Globals.List_.listPush).value();
             InterpreterObject[] unitObj = new InterpreterObject[1];
@@ -108,6 +120,7 @@ public class BlockGlobals {
         }
         private InterpreterObject createUnitObject(BaseUnit unit){
             InterpreterObject unitObj = InterpreterObject.create();
+            unitObj.setProperty(unitType, InterpreterObject.create((float) unit.getType().id));
             unitObj.setProperty(unitX, InterpreterObject.create(new NativeFunction(a ->
                     unit.isValid() ? InterpreterObject.create(unit.x) : InterpreterObject.nullObject))
             );
