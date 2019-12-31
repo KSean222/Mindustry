@@ -11,6 +11,8 @@ import mindustry.*;
 import mindustry.content.*;
 import mindustry.ctype.ContentType;
 import mindustry.entities.*;
+import mindustry.entities.bullet.BulletType;
+import mindustry.entities.effect.ItemTransfer;
 import mindustry.entities.traits.*;
 import mindustry.entities.units.*;
 import mindustry.game.EventType.*;
@@ -22,6 +24,8 @@ import mindustry.ui.Cicon;
 import mindustry.world.*;
 import mindustry.world.blocks.*;
 import mindustry.world.blocks.defense.DeflectorWall.*;
+import mindustry.world.blocks.defense.turrets.ItemTurret;
+import mindustry.world.blocks.defense.turrets.Turret;
 import mindustry.world.blocks.units.CommandCenter.*;
 import mindustry.world.blocks.units.UnitFactory.*;
 import mindustry.world.meta.*;
@@ -69,7 +73,7 @@ public abstract class BaseUnit extends Unit implements ShooterTrait{
         public void loadFrom(float x, float y, Item item){
             if(unit.dst(x, y) > maxItemTransferDistance) return;
             Tile tile = world.tileWorld(x, y);
-            if(tile != null && tile.block().unloadable && tile.entity.items.has(item)){
+            if(tile != null && tile.block().unloadable && tile.entity != null && tile.entity.items.has(item)){
                 while(tile.entity.items.has(item) && unit.acceptsItem(item)){
                     tile.entity.items.remove(item, 1);
                     Call.transferItemToUnit(item, tile.getX(), tile.getY(), unit);
@@ -83,8 +87,25 @@ public abstract class BaseUnit extends Unit implements ShooterTrait{
             if(tile == null || tile.entity == null) return;
             int items = tile.block().acceptStack(unit.item.item, unit.item.amount, tile, unit);
             if(items <= 0) return;
-            Call.transferItemTo(unit.item.item, items, unit.x, unit.y, tile);
+            if(tile.block() instanceof ItemTurret){
+                Call.transferItemToTurret(unit.item.item, items, tile, unit);
+            } else {
+                Call.transferItemTo(unit.item.item, items, unit.x, unit.y, tile);
+            }
             unit.item.amount -= items;
+        }
+        @Remote(called = Loc.server)
+        public static void transferItemToTurret(Item item, int amount, Tile tile, Unit unit){
+            if(tile != null && tile.block() instanceof ItemTurret){
+                for(int i = 0; i < Mathf.clamp(amount / 3, 1, 8); i++){
+                    Time.run(i * 3, () -> ItemTransfer.create(item, unit.x, unit.y, tile, () -> {}));
+                }
+                tile.block().handleStack(item, amount, tile, unit);
+            }
+        }
+        public void mineAt(float x, float y){
+        }
+        public void stopMining(){
         }
     }
 

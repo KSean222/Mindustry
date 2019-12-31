@@ -9,8 +9,10 @@ import mindustry.entities.units.UnitState;
 import mindustry.gen.Call;
 import mindustry.type.Item;
 import mindustry.type.ItemType;
+import mindustry.world.Block;
 import mindustry.world.Pos;
 import mindustry.world.Tile;
+import mindustry.world.blocks.OreBlock;
 
 import java.io.*;
 
@@ -114,12 +116,25 @@ public class MinerDrone extends BaseDrone implements MinerTrait{
         }
     }
     public static class UnitOverrider extends FlyingUnit.UnitOverrider{
-        public UnitOverrider(FlyingUnit unit) {
+        private MinerDrone unit;
+        public UnitOverrider(MinerDrone unit) {
             super(unit);
+            this.unit = unit;
         }
         @Override
         public void shootAt(float x, float y) {
             //Don't be silly, miners can't shoot! Right. . . ?
+        }
+        @Override
+        public void mineAt(float x, float y) {
+            Tile tile = world.tileWorld(x, y);
+            if(tile != null && tile.overlay() instanceof OreBlock && tile.block() == Blocks.air && unit.dst(tile) < unit.type.range){
+                unit.setMineTile(tile);
+            }
+        }
+        @Override
+        public void stopMining(){
+            unit.setMineTile(null);
         }
     }
     @Override

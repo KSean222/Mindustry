@@ -119,8 +119,8 @@ public class FlyingUnit extends BaseUnit{
         }
     }
     public static class UnitOverrider extends BaseUnit.UnitOverrider{
-        FlyingUnit unit;
-        Vec2 target = null;
+        private FlyingUnit unit;
+        private Vec2 target = null;
         public UnitOverrider(FlyingUnit unit){
             super(unit);
             this.unit = unit;

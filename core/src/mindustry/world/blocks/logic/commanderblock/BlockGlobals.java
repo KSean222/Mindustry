@@ -110,6 +110,8 @@ public class BlockGlobals {
         public InterpreterObject unitShootAt = InterpreterObject.create("shoot_at");
         public InterpreterObject unitLoadFrom = InterpreterObject.create("load_from");
         public InterpreterObject unitUnloadTo = InterpreterObject.create("unload_to");
+        public InterpreterObject unitMineAt = InterpreterObject.create("mine_at");
+        public InterpreterObject unitStopMining = InterpreterObject.create("stop_mining");
         public Unit_(Interpreter interpreter, DroneCommanderBlock.DroneCommanderBlockEntity entity) {
             super(interpreter, entity);
         }
@@ -183,6 +185,14 @@ public class BlockGlobals {
                 unit.overrider.unloadTo(x, y);
                 return null;
             }));
+            unitObj.setProperty(unitMineAt, wrapOverriderTwoFloatsFunc(unit, (x, y) -> {
+                unit.overrider.mineAt(x, y);
+                return null;
+            }));
+            unitObj.setProperty(unitStopMining, InterpreterObject.create(new NativeFunction(a -> {
+                if(unit.isValid() && unit.overrider != null) unit.overrider.stopMining();
+                return InterpreterObject.nullObject;
+            })));
             return unitObj;
         }
         private InterpreterObject wrapOverriderTwoFloatsFunc(BaseUnit unit, Func2<Float, Float, Void> func){
