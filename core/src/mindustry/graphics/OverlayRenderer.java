@@ -64,7 +64,7 @@ public class OverlayRenderer{
                 for(Tile mechpad : indexer.getAllied(player.getTeam(), BlockFlag.mechPad)){
                     if(!(mechpad.block() instanceof MechPad)) continue;
                     if(!rect.setSize(Core.camera.width * 0.9f, Core.camera.height * 0.9f)
-                            .setCenter(Core.camera.position.x, Core.camera.position.y).contains(mechpad.x, mechpad.y)){
+                            .setCenter(Core.camera.position.x, Core.camera.position.y).contains(mechpad.drawx(), mechpad.drawy())){
 
                         Tmp.v1.set(mechpad.drawx(), mechpad.drawy()).sub(Core.camera.position.x, Core.camera.position.y).setLength(indicatorLength);
 
@@ -125,7 +125,7 @@ public class OverlayRenderer{
             if(tile != null && tile.block() != Blocks.air && tile.getTeam() == player.getTeam()){
                 tile.block().drawSelect(tile);
 
-                if(Core.input.keyDown(Binding.rotateplaced) && tile.block().rotate){
+                if(Core.input.keyDown(Binding.rotateplaced) && tile.block().rotate && tile.interactable(player.getTeam())){
                     control.input.drawArrow(tile.block(), tile.x, tile.y, tile.rotation(), true);
                     Draw.color(Pal.accent, 0.3f + Mathf.absin(4f, 0.2f));
                     Fill.square(tile.drawx(), tile.drawy(), tile.block().size * tilesize/2f);

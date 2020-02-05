@@ -66,17 +66,17 @@ public class ServerControl implements ApplicationListener{
             "globalrules", "{reactorExplosions: false}"
         );
 
-        Log.setLogger((level, text, args1) -> {
-            String result = "[" + dateTime.format(LocalDateTime.now()) + "] " + format(tags[level.ordinal()] + " " + text + "&fr", args1);
+        Log.setLogger((level, text) -> {
+            String result = "[" + dateTime.format(LocalDateTime.now()) + "] " + format(tags[level.ordinal()] + " " + text + "&fr");
             System.out.println(result);
 
             if(Config.logging.bool()){
-                logToFile("[" + dateTime.format(LocalDateTime.now()) + "] " + format(tags[level.ordinal()] + " " + text + "&fr", false, args1));
+                logToFile("[" + dateTime.format(LocalDateTime.now()) + "] " + formatColors(tags[level.ordinal()] + " " + text + "&fr", false));
             }
 
             if(socketOutput != null){
                 try{
-                    socketOutput.println(format(text + "&fr", false, args1));
+                    socketOutput.println(formatColors(text + "&fr", false));
                 }catch(Throwable e){
                     err("Error occurred logging to socket: {0}", e.getClass().getSimpleName());
                 }
@@ -491,6 +491,37 @@ public class ServerControl implements ApplicationListener{
             }
         });
 
+        handler.register("subnet-ban", "[add/remove] [address]", "Ban a subnet. This simply rejects all connections with IPs starting with some string.", arg -> {
+            if(arg.length == 0){
+                Log.info("Subnets banned: &lc{0}", netServer.admins.getSubnetBans().isEmpty() ? "<none>" : "");
+                for(String subnet : netServer.admins.getSubnetBans()){
+                    Log.info("&ly  " + subnet + "");
+                }
+            }else if(arg.length == 1){
+                err("You must provide a subnet to add or remove.");
+            }else{
+                if(arg[0].equals("add")){
+                    if(netServer.admins.getSubnetBans().contains(arg[1])){
+                        err("That subnet is already banned.");
+                        return;
+                    }
+
+                    netServer.admins.addSubnetBan(arg[1]);
+                    Log.info("Banned &ly{0}&lc**", arg[1]);
+                }else if(arg[0].equals("remove")){
+                    if(!netServer.admins.getSubnetBans().contains(arg[1])){
+                        err("That subnet isn't banned.");
+                        return;
+                    }
+
+                    netServer.admins.removeSubnetBan(arg[1]);
+                    Log.info("Unbanned &ly{0}&lc**", arg[1]);
+                }else{
+                    err("Incorrect usage. You must provide add/remove as the second argument.");
+                }
+            }
+        });
+
         handler.register("whitelisted", "List the entire whitelist.", arg -> {
             if(netServer.admins.getWhitelisted().isEmpty()){
                 info("&lyNo whitelisted players found.");
@@ -622,18 +653,10 @@ public class ServerControl implements ApplicationListener{
         });
 
         handler.register("unban", "<ip/ID>", "Completely unban a person by IP or ID.", arg -> {
-            if(arg[0].contains(".")){
-                if(netServer.admins.unbanPlayerIP(arg[0])){
-                    info("Unbanned player by IP: {0}.", arg[0]);
-                }else{
-                    err("That IP is not banned!");
-                }
+            if(netServer.admins.unbanPlayerIP(arg[0]) || netServer.admins.unbanPlayerID(arg[0])){
+                info("Unbanned player.", arg[0]);
             }else{
-                if(netServer.admins.unbanPlayerID(arg[0])){
-                    info("Unbanned player by ID: {0}.", arg[0]);
-                }else{
-                    err("That ID is not banned!");
-                }
+                err("That IP/ID is not banned!");
             }
         });
 
@@ -774,6 +797,22 @@ public class ServerControl implements ApplicationListener{
             }
         });
 
+        handler.register("search", "<name...>", "Search players who have used part of a name.", arg -> {
+
+            ObjectSet<PlayerInfo> infos = netServer.admins.searchNames(arg[0]);
+
+            if(infos.size > 0){
+                info("&lgPlayers found: {0}", infos.size);
+
+                int i = 0;
+                for(PlayerInfo info : infos){
+                    info("- &lc[{0}] &ly'{1}'&lc / &lm{2}", i++, info.lastName, info.id);
+                }
+            }else{
+                info("Nobody with that name could be found.");
+            }
+        });
+
         handler.register("gc", "Trigger a grabage struct. Testing only.", arg -> {
             int pre = (int)(Core.app.getJavaHeap() / 1024 / 1024);
             System.gc();
@@ -782,7 +821,6 @@ public class ServerControl implements ApplicationListener{
         });
 
         mods.eachClass(p -> p.registerServerCommands(handler));
-        mods.eachClass(p -> p.registerClientCommands(netServer.clientCommands));
     }
 
     private void readCommands(){

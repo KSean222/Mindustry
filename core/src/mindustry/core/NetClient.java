@@ -1,29 +1,29 @@
 package mindustry.core;
 
 import arc.*;
-import mindustry.annotations.Annotations.*;
-import arc.struct.*;
 import arc.graphics.*;
 import arc.math.*;
-import arc.util.CommandHandler.*;
+import arc.struct.*;
 import arc.util.*;
+import arc.util.CommandHandler.*;
 import arc.util.io.*;
 import arc.util.serialization.*;
 import mindustry.*;
+import mindustry.annotations.Annotations.*;
 import mindustry.core.GameState.*;
-import mindustry.ctype.ContentType;
+import mindustry.ctype.*;
 import mindustry.entities.*;
 import mindustry.entities.traits.BuilderTrait.*;
 import mindustry.entities.traits.*;
 import mindustry.entities.type.*;
-import mindustry.game.*;
 import mindustry.game.EventType.*;
+import mindustry.game.*;
 import mindustry.gen.*;
 import mindustry.net.Administration.*;
 import mindustry.net.Net.*;
 import mindustry.net.*;
 import mindustry.net.Packets.*;
-import mindustry.type.TypeID;
+import mindustry.type.*;
 import mindustry.world.*;
 import mindustry.world.modules.*;
 
@@ -133,9 +133,9 @@ public class NetClient implements ApplicationListener{
     }
 
     //called on all clients
-    @Remote(called = Loc.server, targets = Loc.server, variants = Variant.both)
+    @Remote(targets = Loc.server, variants = Variant.both)
     public static void sendMessage(String message, String sender, Player playersender){
-        if(Vars.ui != null && !(playersender != null && net.server() && sender.startsWith("[#" + player.getTeam().color.toString() + "]<T>"))){
+        if(Vars.ui != null){
             Vars.ui.chatfrag.addMessage(message, sender);
         }
 
@@ -160,7 +160,7 @@ public class NetClient implements ApplicationListener{
             throw new ValidateException(player, "Player has sent a message above the text limit.");
         }
 
-        String original = message;
+        Events.fire(new PlayerChatEvent(player, message));
 
         //check if it's a command
         CommandResponse response = netServer.clientCommands.handleMessage(message, player);
@@ -169,6 +169,11 @@ public class NetClient implements ApplicationListener{
             //supress chat message if it's filtered out
             if(message == null){
                 return;
+            }
+
+            //special case; graphical server needs to see its message
+            if(!headless){
+                sendMessage(message, colorizeName(player.id, player.name), player);
             }
 
             //server console logging
@@ -197,8 +202,6 @@ public class NetClient implements ApplicationListener{
                 player.sendMessage(text);
             }
         }
-
-        Events.fire(new PlayerChatEvent(player, message, original));
     }
 
     public static String colorizeName(int id, String name){
@@ -263,6 +266,34 @@ public class NetClient implements ApplicationListener{
         ui.showText("", message);
     }
 
+    //TODO these are commented out to enforce compatibility with 103! uncomment before 104 release
+    /*
+
+    @Remote(variants = Variant.both)
+    public static void onInfoPopup(String message, float duration, int align, int top, int left, int bottom, int right){
+        ui.showInfoPopup(message, duration, align, top, left, bottom, right);
+    }
+
+    @Remote(variants = Variant.both)
+    public static void onLabel(String info, float duration, float worldx, float worldy){
+        ui.showLabel(info, duration, worldx, worldy);
+    }
+
+    @Remote(variants = Variant.both, unreliable = true)
+    public static void onEffect(Effect effect, float x, float y, float rotation, Color color){
+        Effects.effect(effect, color, x, y, rotation);
+    }
+
+    @Remote(variants = Variant.both)
+    public static void onEffectReliable(Effect effect, float x, float y, float rotation, Color color){
+        Effects.effect(effect, color, x, y, rotation);
+    }*/
+
+    @Remote(variants = Variant.both)
+    public static void onInfoToast(String message, float duration){
+        ui.showInfoToast(message, duration);
+    }
+
     @Remote(variants = Variant.both)
     public static void onSetRules(Rules rules){
         state.rules = rules;
@@ -274,7 +305,6 @@ public class NetClient implements ApplicationListener{
         netClient.removed.clear();
         logic.reset();
 
-        ui.chatfrag.clearMessages();
         net.setClientLoaded(false);
 
         ui.loadfrag.show("$connecting.data");
@@ -515,7 +545,7 @@ public class NetClient implements ApplicationListener{
             return Core.settings.getString("usid-" + ip, null);
         }else{
             byte[] bytes = new byte[8];
-            new RandomXS128().nextBytes(bytes);
+            new Rand().nextBytes(bytes);
             String result = new String(Base64Coder.encode(bytes));
             Core.settings.put("usid-" + ip, result);
             Core.settings.save();
