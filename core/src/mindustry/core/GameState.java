@@ -14,6 +14,8 @@ public class GameState{
     public float wavetime;
     /** Whether the game is in game over state. */
     public boolean gameOver = false, launched = false;
+    /** How many more frames of timestop left */
+    public float timeStopped = 0;
     /** The current game rules. */
     public Rules rules = new Rules();
     /** Statistics for this save/game. Displayed after game over. */

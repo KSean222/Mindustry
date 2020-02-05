@@ -91,6 +91,11 @@ public class Logic implements ApplicationListener{
                 }
             }
         });
+        Events.on(PlayerChatEvent.class, event -> {
+            if(event.message.equals("ZA WARUDO!")){
+                state.timeStopped = 8 * 60;
+            }
+        });
     }
 
     /** Handles the event of content being used by either the player or some block. */
@@ -212,6 +217,13 @@ public class Logic implements ApplicationListener{
         Events.fire(Trigger.update);
 
         if(!state.is(State.menu)){
+            boolean timeStopped = state.timeStopped > 0;
+            if(timeStopped){
+                state.timeStopped -= Time.delta();
+                if(state.timeStopped < 0){
+                    state.timeStopped = 0;
+                }
+            }
             if(!net.client()){
                 state.enemies = unitGroup.count(b -> b.getTeam() == state.rules.waveTeam && b.countsAsEnemy());
             }
@@ -221,7 +233,9 @@ public class Logic implements ApplicationListener{
 
                 if(state.rules.waves && state.rules.waveTimer && !state.gameOver){
                     if(!state.rules.waitForWaveToEnd || state.enemies == 0){
-                        state.wavetime = Math.max(state.wavetime - Time.delta(), 0);
+                        if(!timeStopped){
+                            state.wavetime = Math.max(state.wavetime - Time.delta(), 0);
+                        }
                     }
                 }
 
@@ -235,12 +249,14 @@ public class Logic implements ApplicationListener{
                 }
 
                 if(!state.isEditor()){
-                    unitGroup.update();
-                    puddleGroup.update();
-                    shieldGroup.update();
-                    bulletGroup.update();
-                    tileGroup.update();
-                    fireGroup.update();
+                    if(!timeStopped) {
+                        unitGroup.update();
+                        puddleGroup.update();
+                        shieldGroup.update();
+                        bulletGroup.update();
+                        tileGroup.update();
+                        fireGroup.update();
+                    }
                 }else{
                     unitGroup.updateEvents();
                     collisions.updatePhysics(unitGroup);
